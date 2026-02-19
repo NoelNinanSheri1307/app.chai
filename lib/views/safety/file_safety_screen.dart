@@ -8,6 +8,9 @@ import '../../core/app_text_styles.dart';
 import '../../core/spacing.dart';
 import '../../models/analysis_result_model.dart';
 import '../../services/analysis_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/history_provider.dart';
+import '../../models/history_item_model.dart';
 import '../../services/report_service.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -125,6 +128,21 @@ class _FileSafetyScreenState extends State<FileSafetyScreen> {
 
     try {
       final analysis = await AnalysisService.analyzeImage(selectedImage!);
+      final historyProvider = Provider.of<HistoryProvider>(
+        context,
+        listen: false,
+      );
+
+      historyProvider.addHistoryItem(
+        HistoryItem(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          imagePath: selectedImage?.path,
+          authenticityScore: analysis.authenticityScore,
+          riskLevel: analysis.riskLevel,
+          timestamp: DateTime.now(),
+          type: "safety",
+        ),
+      );
 
       setState(() {
         result = analysis;

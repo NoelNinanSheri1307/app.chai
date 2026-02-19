@@ -35,8 +35,10 @@ class _ResultScreenState extends State<ResultScreen> {
     if (!widget.saveToHistory) return;
 
     Future.microtask(() {
-      final historyProvider =
-          Provider.of<HistoryProvider>(context, listen: false);
+      final historyProvider = Provider.of<HistoryProvider>(
+        context,
+        listen: false,
+      );
 
       historyProvider.addHistoryItem(
         HistoryItem(
@@ -45,6 +47,7 @@ class _ResultScreenState extends State<ResultScreen> {
           authenticityScore: widget.result.authenticityScore,
           riskLevel: widget.result.riskLevel,
           timestamp: DateTime.now(),
+          type: "analysis",
         ),
       );
     });
@@ -66,10 +69,12 @@ class _ResultScreenState extends State<ResultScreen> {
     final result = widget.result;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final primaryText =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final secondaryText =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final primaryText = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final secondaryText = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final cardColor = isDark ? AppColors.darkCard : AppColors.lightCard;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
@@ -131,10 +136,7 @@ class _ResultScreenState extends State<ResultScreen> {
 
             const SizedBox(height: 20),
 
-            Text(
-              result.explanation,
-              style: AppTextStyles.body(secondaryText),
-            ),
+            Text(result.explanation, style: AppTextStyles.body(secondaryText)),
           ],
         ),
       ),

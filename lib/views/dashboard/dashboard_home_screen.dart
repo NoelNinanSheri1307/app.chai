@@ -104,10 +104,78 @@ class DashboardHomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl + 4),
 
+          // RECENT ANALYSES
           Text(
             "Recent Analyses",
             style: AppTextStyles.headingMedium(primaryText),
           ),
+
+          const SizedBox(height: AppSpacing.md),
+
+          if (history.where((e) => e.type == "analysis").isEmpty)
+            Text("No recent analyses", style: AppTextStyles.body(secondaryText))
+          else
+            Column(
+              children: history.where((e) => e.type == "analysis").take(3).map((
+                item,
+              ) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Score: ${item.authenticityScore.toInt()}%"),
+                      Text(item.riskLevel),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+
+          const SizedBox(height: AppSpacing.xl),
+
+          // RECENT SAFETY CHECKS
+          Text(
+            "Recent Safety Checks",
+            style: AppTextStyles.headingMedium(primaryText),
+          ),
+
+          const SizedBox(height: AppSpacing.md),
+
+          if (history.where((e) => e.type == "safety").isEmpty)
+            Text(
+              "No recent safety checks",
+              style: AppTextStyles.body(secondaryText),
+            )
+          else
+            Column(
+              children: history.where((e) => e.type == "safety").take(3).map((
+                item,
+              ) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Score: ${item.authenticityScore.toInt()}%"),
+                      Text(item.riskLevel),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
 
           const SizedBox(height: AppSpacing.md),
 

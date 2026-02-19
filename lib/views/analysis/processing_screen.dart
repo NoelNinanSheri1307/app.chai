@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../core/spacing.dart';
@@ -17,34 +18,65 @@ class ProcessingScreen extends StatefulWidget {
 }
 
 class _ProcessingScreenState extends State<ProcessingScreen> {
+  int _currentStep = 0;
+  bool _completed = false;
+
+  final List<String> _steps = [
+    "Running AI Detection Layer",
+    "Performing Frequency Analysis",
+    "Executing ELA Forensics",
+    "Scanning Metadata Integrity",
+    "Fusion & Risk Scoring",
+    "Generating Final Verdict",
+  ];
+
   @override
   void initState() {
     super.initState();
-    _startProcessing();
+    _runAnalysis();
+    _animateSteps();
   }
 
-  void _startProcessing() async {
+  // Backend Call (UNCHANGED)
+  void _runAnalysis() async {
     try {
-      final AnalysisResult result =
-          await AnalysisService.analyzeImage(File(widget.imagePath));
+      final AnalysisResult result = await AnalysisService.analyzeImage(
+        File(widget.imagePath),
+      );
 
       if (!mounted) return;
+
+      setState(() {
+        _completed = true;
+      });
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ResultScreen(
-            result: result,
-            imagePath: widget.imagePath,
-          ),
+          builder: (_) =>
+              ResultScreen(result: result, imagePath: widget.imagePath),
         ),
       );
     } catch (e) {
-      print("Error: $e");
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Analysis failed")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Analysis failed")));
+      Navigator.pop(context);
+    }
+  }
+
+  // UI Animation Loop
+  void _animateSteps() async {
+    while (!_completed) {
+      for (int i = 0; i < _steps.length; i++) {
+        if (_completed) return;
+        await Future.delayed(const Duration(milliseconds: 700));
+        if (!mounted) return;
+        setState(() {
+          _currentStep = i;
+        });
+      }
     }
   }
 
@@ -75,15 +107,46 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              "Please wait while the system evaluates authenticity",
+              "AI Forensic Engine is evaluating authenticity",
               style: AppTextStyles.body(secondaryText),
             ),
             const SizedBox(height: AppSpacing.xl),
-            const Expanded(
-              child: Center(
-                child: CircularProgressIndicator(),
+
+            Expanded(
+              child: ListView.builder(
+                itemCount: _steps.length,
+                itemBuilder: (context, index) {
+                  final isActive = index <= _currentStep;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isActive
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
+                          color: isActive
+                              ? AppColors.accentBlue
+                              : secondaryText,
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Text(
+                            _steps[index],
+                            style: AppTextStyles.body(
+                              isActive ? primaryText : secondaryText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
+
+            const LinearProgressIndicator(),
           ],
         ),
       ),
