@@ -71,7 +71,7 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
     while (!_completed) {
       for (int i = 0; i < _steps.length; i++) {
         if (_completed) return;
-        await Future.delayed(const Duration(milliseconds: 700));
+        await Future.delayed(const Duration(milliseconds: 1400));
         if (!mounted) return;
         setState(() {
           _currentStep = i;
@@ -118,35 +118,52 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
                 itemBuilder: (context, index) {
                   final isActive = index <= _currentStep;
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isActive
-                              ? Icons.check_circle
-                              : Icons.radio_button_unchecked,
-                          color: isActive
-                              ? AppColors.accentBlue
-                              : secondaryText,
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Text(
-                            _steps[index],
-                            style: AppTextStyles.body(
-                              isActive ? primaryText : secondaryText,
+                  return AnimatedOpacity(
+                    duration: const Duration(milliseconds: 600),
+                    opacity: isActive ? 1.0 : 0.3,
+                    child: AnimatedSlide(
+                      duration: const Duration(milliseconds: 600),
+                      offset: isActive ? Offset.zero : const Offset(0.2, 0),
+                      curve: Curves.easeOut,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: Row(
+                          children: [
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 400),
+                              child: Icon(
+                                isActive
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                                key: ValueKey(isActive),
+                                color: isActive
+                                    ? AppColors.accentBlue
+                                    : secondaryText,
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Text(
+                                _steps[index],
+                                style: AppTextStyles.body(
+                                  isActive ? primaryText : secondaryText,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   );
                 },
               ),
             ),
 
-            const LinearProgressIndicator(),
+            const SizedBox(height: 12),
+            LinearProgressIndicator(
+              minHeight: 6,
+              borderRadius: BorderRadius.circular(10),
+            ),
           ],
         ),
       ),

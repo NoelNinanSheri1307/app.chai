@@ -13,6 +13,7 @@ import '../../providers/history_provider.dart';
 import '../../models/history_item_model.dart';
 import '../../services/report_service.dart';
 import 'package:share_plus/share_plus.dart';
+import '../analysis/processing_screen.dart';
 
 class FileSafetyScreen extends StatefulWidget {
   const FileSafetyScreen({super.key});
@@ -109,7 +110,17 @@ class _FileSafetyScreenState extends State<FileSafetyScreen> {
             Image.file(selectedImage!, height: 200, fit: BoxFit.cover),
             const SizedBox(height: AppSpacing.md),
             ElevatedButton(
-              onPressed: _runRealAnalysis,
+              onPressed: () {
+                if (selectedImage == null) return;
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ProcessingScreen(imagePath: selectedImage!.path),
+                  ),
+                );
+              },
               child: const Text("Analyze Safety"),
             ),
           ],
