@@ -2,12 +2,12 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/app_colors.dart';
 import '../../core/app_text_styles.dart';
 import '../../core/spacing.dart';
 import '../../models/analysis_result_model.dart';
-import '../safety/file_safety_screen.dart';
-import 'package:image_picker/image_picker.dart';
+import '../../services/analysis_screen.dart';
 import '../../services/report_service.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -52,27 +52,12 @@ class _FileSafetyScreenState extends State<FileSafetyScreen> {
             if (isAnalyzing) const Center(child: CircularProgressIndicator()),
 
             if (result != null)
-              AnimatedScale(
-                scale: _isBlockedPulse && _showResultAnimation ? 1.02 : 1.0,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOut,
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 400),
-                  opacity: _showResultAnimation ? 1 : 0,
-                  child: AnimatedSlide(
-                    duration: const Duration(milliseconds: 400),
-                    offset: _showResultAnimation
-                        ? Offset.zero
-                        : const Offset(0, 0.05),
-                    child: _buildEnforcementSection(
-                      result!,
-                      cardColor,
-                      borderColor,
-                      primaryText,
-                      secondaryText,
-                    ),
-                  ),
-                ),
+              _buildEnforcementSection(
+                result!,
+                cardColor,
+                borderColor,
+                primaryText,
+                secondaryText,
               ),
           ],
         ),
@@ -121,13 +106,40 @@ class _FileSafetyScreenState extends State<FileSafetyScreen> {
             Image.file(selectedImage!, height: 200, fit: BoxFit.cover),
             const SizedBox(height: AppSpacing.md),
             ElevatedButton(
-              onPressed: _runMockAnalysis,
+              onPressed: _runRealAnalysis,
               child: const Text("Analyze Safety"),
             ),
           ],
         ],
       ),
     );
+  }
+
+  Future<void> _runRealAnalysis() async {
+    if (selectedImage == null) return;
+
+    setState(() {
+      isAnalyzing = true;
+      result = null;
+    });
+
+    try {
+      final analysis = await AnalysisService.analyzeImage(selectedImage!);
+
+      setState(() {
+        result = analysis;
+        isAnalyzing = false;
+        _isBlockedPulse = analysis.enforcementAction == "Block";
+      });
+    } catch (e) {
+      setState(() {
+        isAnalyzing = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Analysis failed")));
+    }
   }
 
   Widget _buildEnforcementSection(
@@ -161,18 +173,12 @@ class _FileSafetyScreenState extends State<FileSafetyScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 400),
+        Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: bannerColor.withOpacity(0.15),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: bannerColor,
-              width: result.enforcementAction == "Block" && _showResultAnimation
-                  ? 3
-                  : 2,
-            ),
+            border: Border.all(color: bannerColor),
           ),
           child: Row(
             children: [
@@ -200,58 +206,20 @@ class _FileSafetyScreenState extends State<FileSafetyScreen> {
 
         const SizedBox(height: AppSpacing.xl),
 
-        _buildForensicBreakdown(result, cardColor, borderColor, primaryText),
+        Text(
+          "Authenticity Score: ${result.authenticityScore.toStringAsFixed(4)}%",
+        ),
+        Text("AI Score: ${(result.aiScore * 100).toInt()}%"),
+        Text(
+          "Manipulation Score: ${(result.manipulationScore * 100).toInt()}%",
+        ),
 
         const SizedBox(height: AppSpacing.xl),
 
-        _buildActionButtons(result),
-      ],
-    );
-  }
-
-  Widget _buildForensicBreakdown(
-    AnalysisResult result,
-    Color cardColor,
-    Color borderColor,
-    Color primaryText,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Technical Forensic Report",
-            style: AppTextStyles.headingMedium(primaryText),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text("Authenticity Score: ${result.authenticityScore}%"),
-          Text("AI Score: ${(result.aiScore * 100).toInt()}%"),
-          Text(
-            "Manipulation Score: ${(result.manipulationScore * 100).toInt()}%",
-          ),
-          Text("Frequency Score: ${(result.frequencyScore * 100).toInt()}%"),
-          Text("Metadata Flag: ${result.metadataFlag}"),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(AnalysisResult result) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
         Row(
           children: [
             ElevatedButton(
-              onPressed: () {
-                ReportService.generateReport(result);
-              },
+              onPressed: () => ReportService.generateReport(result),
               child: const Text("Export PDF"),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -267,91 +235,7 @@ class _FileSafetyScreenState extends State<FileSafetyScreen> {
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.xl),
-
-        if (result.enforcementAction == "Allow")
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.riskLow),
-            child: const Text("Proceed With Upload"),
-          )
-        else if (result.enforcementAction == "Review")
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.riskMedium,
-            ),
-            child: const Text("Send For Manual Review"),
-          )
-        else
-          ElevatedButton(
-            onPressed: null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.riskHigh,
-            ),
-            child: const Text("Upload Blocked"),
-          ),
       ],
     );
-  }
-
-  void _runMockAnalysis() async {
-    setState(() {
-      isAnalyzing = true;
-    });
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    final random = DateTime.now().millisecondsSinceEpoch % 3;
-
-    AnalysisResult mock;
-
-    if (random == 0) {
-      mock = AnalysisResult(
-        authenticityScore: 90,
-        riskLevel: "Low",
-        enforcementAction: "Allow",
-        aiScore: 0.1,
-        manipulationScore: 0.1,
-        frequencyScore: 0.2,
-        metadataFlag: false,
-        explanation: "Image appears authentic.",
-      );
-    } else if (random == 1) {
-      mock = AnalysisResult(
-        authenticityScore: 55,
-        riskLevel: "Medium",
-        enforcementAction: "Review",
-        aiScore: 0.6,
-        manipulationScore: 0.5,
-        frequencyScore: 0.6,
-        metadataFlag: true,
-        explanation: "Potential AI modifications detected.",
-      );
-    } else {
-      mock = AnalysisResult(
-        authenticityScore: 20,
-        riskLevel: "High",
-        enforcementAction: "Block",
-        aiScore: 0.9,
-        manipulationScore: 0.8,
-        frequencyScore: 0.9,
-        metadataFlag: true,
-        explanation: "Strong indicators of AI-generated content.",
-      );
-    }
-
-    setState(() {
-      result = mock;
-      isAnalyzing = false;
-      _showResultAnimation = false;
-      _isBlockedPulse = mock.enforcementAction == "Block";
-    });
-
-    await Future.delayed(const Duration(milliseconds: 50));
-
-    setState(() {
-      _showResultAnimation = true;
-    });
   }
 }
