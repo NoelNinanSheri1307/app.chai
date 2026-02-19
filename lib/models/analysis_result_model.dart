@@ -1,3 +1,5 @@
+// lib/models/analysis_result_model.dart
+
 class AnalysisResult {
   final double authenticityScore;
   final String riskLevel;

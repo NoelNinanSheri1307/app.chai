@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/analysis_result_model.dart';
 import '../../providers/history_provider.dart';
 import '../../core/spacing.dart';
 import '../../core/app_colors.dart';
@@ -108,6 +109,20 @@ class HistoryScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => ResultScreen(
+                      result: AnalysisResult(
+                        authenticityScore: item.authenticityScore,
+                        riskLevel: item.riskLevel,
+                        enforcementAction: item.riskLevel == "Low"
+                            ? "Allow"
+                            : item.riskLevel == "Medium"
+                            ? "Review"
+                            : "Block",
+                        aiScore: 0.0,
+                        manipulationScore: 0.0,
+                        frequencyScore: 0.0,
+                        metadataFlag: false,
+                        explanation: "Loaded from history",
+                      ),
                       imagePath: item.imagePath,
                       saveToHistory: false,
                     ),

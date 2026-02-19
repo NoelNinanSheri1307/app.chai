@@ -1,3 +1,5 @@
+// lib/models/dashboard_stats_model.dart
+
 class DashboardStats {
   final int totalScans;
   final int lowRisk;
